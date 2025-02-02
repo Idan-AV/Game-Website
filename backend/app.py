@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from backend.models.game import Game
 from backend.models.user import User
 from models import db
+from flask import session
 
 app = Flask(__name__)  # - create a flask instance
 # - enable all routes, allow requests from anywhere (optional - not recommended for security)
@@ -38,20 +39,20 @@ def add_game():
 @app.route('/games', methods=['GET'])
 def get_games():
     try:
-        games = Game.query.all()  # Get all the books from the database
+        games = Game.query.all()  # Get all the games from the database
 
-        # Create empty list to store formatted book data we get from the database
+        # Create empty list to store formatted game data we get from the database
         games_list = []
 
-        for game in games:  # Loop through each book from database
-            book_data = {  # Create a dictionary for each book
+        for game in games:  # Loop through each game from database
+            book_data = {  # Create a dictionary for each game
                 'id': game.id,
                 'title': game.title,
                 'genre': game.genre,
                 'price': game.price,
                 'quantity': game.quantity
             }
-            # Add the iterated book dictionary to our list
+            # Add the iterated game dictionary to our list
             games_list.append(book_data)
 
         return jsonify({  # Return JSON response
@@ -70,16 +71,50 @@ def get_games():
 def register():
     data = request.json  # this is parsing the JSON data from the request body
     new_user = User(
-        name=data['name'],  # Set the title of the new book.
-        phone_number=data['phone_number'],  # Set the author of the new book.
+        name=data['name'],  # Set the title of the new game.
+        phone_number=data['phone_number'],  # Set the author of the new game.
         city=data['city'],
-        # Set the types(fantasy, thriller, etc...) of the new book.
-        age=data['age']
+        # Set the types(fantasy, thriller, etc...) of the new game.
+        age=data['age'],
+        password=data["password"]
         # add other if needed...
     )
-    db.session.add(new_user)  # add the bew book to the database session
+    db.session.add(new_user)  # add the new user to the database session
     db.session.commit()  # commit the session to save in the database
     return jsonify({'message': 'user added to database.'}), 201
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    phone_number = data.get('phone_number')
+    password = data.get('password')
+
+    user = User.query.filter_by(phone_number=phone_number).first()
+
+    if user and user.password == password:
+        session['user_id'] = user.id
+        session['user_name'] = user.name
+
+        return jsonify({
+            'message': 'Login successful',
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'phone_number': user.phone_number,
+                'city': user.city,
+                'age': user.age
+            }
+        }), 200
+    else:
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    session.pop('user_name', None)
+    return jsonify({'message': 'Logged out successfully'}), 200
 
 
 if __name__ == '__main__':
