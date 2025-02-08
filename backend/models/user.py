@@ -8,3 +8,4 @@ class User(db.Model):
     phone_number = db.Column(db.String(10), nullable=False)
     city = db.Column(db.String(50), nullable=False)
     age = db.Column(db.Integer, nullable=True)
+    role = db.Column(db.Integer, nullable=False, default=2)  # 1 = Admin, 2 = Customer
