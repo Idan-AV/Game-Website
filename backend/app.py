@@ -141,7 +141,8 @@ def login():
                     'name': user.name,
                     'phone_number': user.phone_number,
                     'city': user.city,
-                    'age': user.age
+                    'age': user.age,
+                    'role': user.role
                 }
             }), 200
 
@@ -179,6 +180,7 @@ def get_loans_for_customer(user_id):
     except Exception as e:
         return jsonify({'error': 'Failed to retrieve games', 'message': str(e)}), 500
 
+
 # works!!!
 @app.route('/loans', methods=['GET', 'POST'])
 def loans():
@@ -191,7 +193,7 @@ def loans():
                     'user_name': loan.user.name,
                     'game_id': loan.game.id,
                     'title': loan.game.title,
-                    'genre': loan.game.genre,  # Fixed incorrect attribute name
+                    'genre': loan.game.genre,
                     'price': loan.game.price,
                     'quantity': loan.game.quantity,
                     'loan_date': loan.loan_date.strftime("%Y-%m-%d"),
@@ -221,6 +223,11 @@ def loans():
 
             if game.quantity <= 0:
                 return jsonify({'error': 'Game is out of stock'}), 400
+            all_loans_for_current_user = Loan.query.filter_by(user_id=user_id).all()
+
+            for loan in all_loans_for_current_user:
+                if loan.game_id == game_id:
+                    return jsonify({'message': 'You already have this game'}), 409
 
             new_loan = Loan(user_id=user.id, game_id=game.id, loan_date=datetime.utcnow())
             game.quantity -= 1
